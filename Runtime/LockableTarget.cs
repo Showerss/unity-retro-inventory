@@ -5,11 +5,13 @@ namespace Retro.Inventory
 {
     /// <summary>
     /// Interactive lock that requires a specific item (Key, Keycard, Passcode card) to unlock.
-    /// Implements IInteractable and seamlessly delegates to Doors, Gates, or transitions.
+    /// Implements IInventoryInteractable and seamlessly delegates to Doors, Gates, or transitions.
     /// </summary>
     [SelectionBase]
-    public class LockableTarget : MonoBehaviour, IInteractable
+    public class LockableTarget : MonoBehaviour, IInventoryInteractable
     {
+        public static event System.Action<LockableTarget> OnLockableSpawned;
+
         [Header("Lock Settings")]
         [Tooltip("The ID of the ItemDefinition required to unlock this object (e.g. 'key_brass', 'keycard_admin').")]
         [SerializeField] private string _requiredKeyId = "key_brass";
@@ -39,11 +41,13 @@ namespace Retro.Inventory
         public string RequiredKeyId => _requiredKeyId;
         public string RequiredKeyName => _requiredKeyName;
         public UnityEvent OnUnlocked => _onUnlocked;
+        public Component TargetToTrigger => _targetToTrigger;
 
         private void Awake()
         {
             EnsureAudioSource();
             EnsureRaycastCollider();
+            OnLockableSpawned?.Invoke(this);
         }
 
         private void EnsureAudioSource()
@@ -79,7 +83,7 @@ namespace Retro.Inventory
             }
         }
 
-        // --- IInteractable Implementation ---
+        // --- IInventoryInteractable Implementation ---
 
         public void Interact(GameObject player)
         {
@@ -143,8 +147,8 @@ namespace Retro.Inventory
                 return $"[Locked] Requires {_requiredKeyName}";
             }
 
-            // If already unlocked, show target's prompt if it is IInteractable
-            if (_targetToTrigger is IInteractable interactable)
+            // If already unlocked, check if target implements IInventoryInteractable
+            if (_targetToTrigger is IInventoryInteractable interactable)
             {
                 return interactable.GetPromptText();
             }
@@ -154,9 +158,14 @@ namespace Retro.Inventory
 
         private void TriggerTarget(GameObject player)
         {
-            if (_targetToTrigger is IInteractable interactable)
+            if (_targetToTrigger is IInventoryInteractable interactable)
             {
                 interactable.Interact(player);
+            }
+            else if (_targetToTrigger != null)
+            {
+                // Reflection/SendMessage fallback for foreign components
+                _targetToTrigger.SendMessage("Interact", player, SendMessageOptions.DontRequireReceiver);
             }
         }
 

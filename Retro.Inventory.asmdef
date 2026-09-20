@@ -4,8 +4,7 @@
     "references": [
         "Unity.InputSystem",
         "Unity.TextMeshPro",
-        "UnityEngine.UI",
-        "FirstPersonController"
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -3,12 +3,14 @@ using UnityEngine;
 namespace Retro.Inventory
 {
     /// <summary>
-    /// World pickup object implementing IInteractable for PlayerInteraction detection.
+    /// World pickup object implementing IInventoryInteractable for PlayerInteraction detection.
     /// Can represent keys, books, flashlights, lamps, keycards, etc. in 3D space.
     /// </summary>
     [SelectionBase]
-    public class WorldPickup : MonoBehaviour, IInteractable
+    public class WorldPickup : MonoBehaviour, IInventoryInteractable
     {
+        public static event System.Action<WorldPickup> OnPickupSpawned;
+
         [Header("Item Configuration")]
         [Tooltip("The ScriptableObject definition of the item picked up.")]
         [SerializeField] private ItemDefinition _itemDefinition;
@@ -39,6 +41,7 @@ namespace Retro.Inventory
             _randomOffset = Random.Range(0f, 10f);
 
             EnsureRaycastCollider();
+            OnPickupSpawned?.Invoke(this);
         }
 
         private void Update()
@@ -55,28 +58,25 @@ namespace Retro.Inventory
         }
 
         /// <summary>
-        /// Ensures there is a non-trigger collider so PlayerInteraction's raycast
-        /// (which runs with QueryTriggerInteraction.Ignore) can detect this object.
+        /// Ensures there is a non-trigger collider so interaction raycasts
+        /// (which run with QueryTriggerInteraction.Ignore) can detect this object.
         /// </summary>
         private void EnsureRaycastCollider()
         {
             Collider col = GetComponent<Collider>();
             if (col == null)
             {
-                // Check in children
                 col = GetComponentInChildren<Collider>();
             }
 
             if (col == null)
             {
-                // Add a small default BoxCollider
                 BoxCollider box = gameObject.AddComponent<BoxCollider>();
                 box.size = new Vector3(0.5f, 0.5f, 0.5f);
                 box.isTrigger = false;
             }
             else
             {
-                // Ensure it is non-trigger for raycasting
                 col.isTrigger = false;
             }
         }
@@ -87,7 +87,7 @@ namespace Retro.Inventory
             _quantity = Mathf.Max(1, quantity);
         }
 
-        // --- IInteractable Implementation ---
+        // --- IInventoryInteractable Implementation ---
 
         public void Interact(GameObject player)
         {

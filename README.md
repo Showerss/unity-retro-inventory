@@ -1,7 +1,9 @@
 # Retro Inventory & Pickups
 
-A slot-based 90s-styled inventory for Unity: stackable items, a hotbar, world pickups,
+A modular, slot-based 90s-styled inventory system for Unity: stackable items, a hotbar, world pickups,
 held-item rendering, readable documents and key-locked targets.
+
+The core package has **zero external project dependencies** (only requires Unity New Input System and UGUI/TMP). It works standalone with any player controller, and automatically bridges into the First Person Controller raycast interaction system when installed.
 
 ## Architecture Overview
 
@@ -11,43 +13,38 @@ ItemDefinition (ScriptableObject - what an item IS)
 └── worldPrefab / heldPrefab (what it looks like on the floor / in your hand)
 
 InventorySystem (MonoBehaviour on the Player - owns the slots)
-├── ItemStack[]        slots, each an ItemDefinition + quantity
-├── InventoryHUD       draws the hotbar, reads keyboard/mouse input
-├── HeldItemManager    spawns heldPrefab on the camera, drives flashlight/lantern
-└── ItemDatabase       id -> ItemDefinition lookup, used to rebuild saves
+├── ItemStack[]            slots, each an ItemDefinition + quantity
+├── InventoryHUD           draws the hotbar, reads keyboard/mouse input
+├── HeldItemManager        spawns heldPrefab on the camera, drives flashlight/lantern
+└── ItemDatabase           id -> ItemDefinition lookup, used to rebuild saves
 
-WorldPickup     (IInteractable) - an item lying in the world
-LockableTarget  (IInteractable) - a door/gate that demands an item id
+IInventoryInteractable     contract for pickups and locks
+├── WorldPickup            an item lying in the world
+└── LockableTarget         a door/gate/chest that demands an item id
+
+Adapters/ (compiled only when the matching package is present)
+└── FirstPersonController/ bridges IInventoryInteractable to FPC IInteractable
 ```
 
 ### Key Features
 
-1. **Slot-based with stacking.** Capacity is configurable (1-24). Items stack up to
-   their own `maxStack`; `AddItem` fills partial stacks before taking a new slot.
-2. **Data-driven items.** An item is an `ItemDefinition` asset — id, display name,
-   category, icon, description, stack size, world prefab, held prefab, sounds. No code
-   per item.
-3. **Pluggable use behaviour.** `ItemUseAction` is a ScriptableObject base class.
-   Ships with `ToggleLightAction` (flashlight/lantern) and `ReadDocumentAction`
-   (fullscreen readable note). Subclass it for anything else.
-4. **Held items.** `HeldItemManager` parents the selected item's `heldPrefab` to the
-   camera, so the player visibly carries what they've equipped.
-5. **Locked targets.** `LockableTarget` sits in front of a Door or any other
-   `IInteractable` and consumes/checks a required item id before delegating through.
-6. **Events for everything.** `OnInventoryChanged`, `OnSlotChanged`, `OnSlotSelected`,
-   `OnItemUsed`, `OnNotification` — wire your own UI without touching this package.
+1. **100% Standalone & Decoupled.** Core assembly only requires Input System and UGUI.
+2. **Slot-based with stacking.** Configurable capacity (1-24). Items stack up to their own `maxStack`; `AddItem` fills partial stacks before taking a new slot.
+3. **Data-driven items.** An item is an `ItemDefinition` asset — id, display name, category, icon, description, stack size, world prefab, held prefab, sounds.
+4. **Pluggable use behaviour.** Polymorphic `ItemUseAction` ScriptableObject pipeline (`ToggleLightAction`, `ReadDocumentAction`, etc.).
+5. **Held items.** `HeldItemManager` parents the selected item's `heldPrefab` to the camera/socket.
+6. **Locked targets.** `LockableTarget` validates required keys/keycards before unlocking.
+7. **Complete Documentation Included.** See `Documentation~/Architecture.md` for the full technical and AI guide.
 
 ---
 
 ## Requirements
 
-This package depends on **[First Person Controller](https://github.com/Showerss/unity-first-person-controller)**
-for its `IInteractable` / `PlayerInteraction` raycast interaction system. `WorldPickup`
-and `LockableTarget` implement `IInteractable`, and `InventoryHUD` reads the current
-interaction prompt from `PlayerInteraction`.
-
-It is declared in `package.json`, so Unity's Package Manager will pull it in
-automatically when you install via git URL.
+| Package | Version |
+|---|---|
+| Unity | 6000.0 or newer |
+| Input System | 1.19.0+ (`com.unity.inputsystem`) |
+| UGUI / TextMeshPro | 2.0.0+ (`com.unity.ugui`) |
 
 ---
 
@@ -66,64 +63,30 @@ Add this line to your project's `Packages/manifest.json` under `"dependencies"`:
 ```json
 "com.retro.inventory": "https://github.com/Showerss/unity-retro-inventory.git"
 ```
-Or for local development:
-```json
-"com.retro.inventory": "file:../path/to/Packages/com.retro.inventory"
-```
 
 ## Quick Start
 
-1. Add **`InventorySystem`** to your Player GameObject and set the slot capacity.
-2. Add **`HeldItemManager`** to the Player and point its hold anchor at your camera.
-3. Create items via **Assets > Create > Retro > Inventory > Item Definition**. Give each
-   a unique `Id` — that string is what saves, pickups and locks all key off.
-4. Create an **`ItemDatabase`** via **Assets > Create > Retro > Item Database** and press
-   **Rebuild From Project** so ids resolve on load.
-5. Drop a Canvas with **`InventoryHUD`** into the scene and assign the `InventorySystem`
-   (it will `FindAnyObjectByType` as a fallback).
-6. For pickups: put **`WorldPickup`** on a prop and assign its `ItemDefinition`. A
-   non-trigger collider is added automatically if one is missing.
-7. For locked doors: put **`LockableTarget`** between the player and the real Door, and
-   set the required item id.
-
-### Default controls
-
-`InventoryHUD` reads the keyboard directly (New Input System), so there is no action
-asset to wire up:
-
-| Input | Action |
-|---|---|
-| `1`–`8` | Select hotbar slot |
-| Mouse wheel | Cycle hotbar |
-| `F` / `Q` | Use selected item |
-| `G` | Drop selected item |
-| `I` / `Tab` | Toggle full inventory panel |
-| `E` / `Space` | Advance / close a document |
-| `Esc` | Close the open panel |
+1. Add **`InventorySystem`** to your Player GameObject.
+2. Add **`HeldItemManager`** to the Player and assign its hold socket.
+3. Create items via **Assets > Create > Retro > Inventory > Item Definition**.
+4. Create an **`ItemDatabase`** via **Assets > Create > Retro > Item Database** and click **Rebuild From Project**.
+5. Drop `InventoryHUD_Canvas.prefab` (included in package) into the scene.
+6. For pickups: place **`WorldPickup`** on any 3D prop.
+7. For locked doors: place **`LockableTarget`** on the door with your required key ID.
 
 ## Scripting
 
 ```csharp
 var inv = player.GetComponent<InventorySystem>();
 
-inv.AddItem(keycardDefinition, 1);     // returns false if full
-inv.HasItem("keycard_red");            // by id
-inv.GetItemCount("battery");
-inv.RemoveItemById("battery", 2);
+inv.AddItem(keycardDefinition, 1);
+inv.HasItem("keycard_red");
 inv.UseSelectedItem();
-inv.DropSlot(0);                       // returns the spawned GameObject
+inv.DropSlot(0);
 
 inv.OnInventoryChanged += RefreshMyUI;
 inv.OnNotification += msg => Debug.Log(msg);
 ```
-
-## Saving
-
-This package does not own a save format. If you also use
-[Retro Pause Menu](https://github.com/Showerss/unity-retro-pause-menu), add its
-`InventorySaveParticipant` component next to your `InventorySystem` and inventory
-contents persist into that package's save slots automatically. Otherwise, serialize
-`Slots` yourself — each `ItemStack` is just an item id plus a quantity.
 
 ## License
 

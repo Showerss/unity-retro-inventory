@@ -1,0 +1,25 @@
+{
+    "name": "Retro.Inventory.Adapters.Fpc",
+    "rootNamespace": "Retro.Inventory.Adapters",
+    "references": [
+        "Retro.Inventory",
+        "FirstPersonController"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "RETRO_INVENTORY_FPC"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.firstperson.controller",
+            "expression": "",
+            "define": "RETRO_INVENTORY_FPC"
+        }
+    ],
+    "noEngineReferences": false
+}

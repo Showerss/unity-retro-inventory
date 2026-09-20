@@ -2,14 +2,13 @@
   "name": "com.retro.inventory",
   "version": "1.0.0",
   "displayName": "Retro Inventory & Pickups",
-  "description": "Modular retro 90s inventory: slot-based storage, stackable items, hotbar, world pickups, held-item rendering, document reading and lockable targets. Integrates with the First Person Controller interaction system.",
+  "description": "Modular retro 90s inventory: slot-based storage, stackable items, hotbar, world pickups, held-item rendering, document reading and lockable targets. Integrates with First Person Controller via optional adapter.",
   "unity": "6000.0",
   "author": {
     "name": "Phillip Banky"
   },
   "dependencies": {
     "com.unity.inputsystem": "1.19.0",
-    "com.unity.ugui": "2.0.0",
-    "com.firstperson.controller": "https://github.com/Showerss/unity-first-person-controller.git"
+    "com.unity.ugui": "2.0.0"
   }
 }
