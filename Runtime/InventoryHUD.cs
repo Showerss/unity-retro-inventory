@@ -100,6 +100,13 @@ namespace Retro.Inventory
                 _inventory.OnSlotSelected -= HandleSlotSelected;
                 _inventory.OnNotification -= ShowNotification;
             }
+
+            if (_isBagOpen || _isDocumentOpen)
+            {
+                _isBagOpen = false;
+                _isDocumentOpen = false;
+                UpdateCursorState();
+            }
         }
 
         private void Start()
@@ -229,13 +236,16 @@ namespace Retro.Inventory
             else if (kb.digit7Key.wasPressedThisFrame) _inventory.SelectSlot(6);
             else if (kb.digit8Key.wasPressedThisFrame) _inventory.SelectSlot(7);
 
-            // 4. Mouse Scroll wheel to cycle hotbar
-            var mouse = Mouse.current;
-            if (mouse != null)
+            // 4. Mouse Scroll wheel to cycle hotbar (when no modal is open)
+            if (!_isBagOpen && !_isDocumentOpen)
             {
-                float scroll = mouse.scroll.ReadValue().y;
-                if (scroll > 0.1f) _inventory.CycleSlot(-1);
-                else if (scroll < -0.1f) _inventory.CycleSlot(1);
+                var mouse = Mouse.current;
+                if (mouse != null)
+                {
+                    float scroll = mouse.scroll.ReadValue().y;
+                    if (scroll > 0.1f) _inventory.CycleSlot(-1);
+                    else if (scroll < -0.1f) _inventory.CycleSlot(1);
+                }
             }
 
             // 5. Use item with F or Q (tap or hold, configurable)
