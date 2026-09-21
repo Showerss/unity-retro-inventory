@@ -13,9 +13,14 @@ namespace Retro.Inventory
     /// </summary>
     public class InventoryHUD : MonoBehaviour
     {
+        /// <summary>
+        /// Optional delegate provider for external interaction systems (such as FirstPersonController's PlayerInteraction)
+        /// to feed prompt text to this HUD without hard coupling.
+        /// </summary>
+        public static System.Func<string> PromptProvider { get; set; }
+
         [Header("References")]
         [SerializeField] private InventorySystem _inventory;
-        [SerializeField] private PlayerInteraction _playerInteraction;
 
         [Header("UI Elements - Prompt & Notification")]
         [SerializeField] private TextMeshProUGUI _promptText;
@@ -55,6 +60,7 @@ namespace Retro.Inventory
         private float _notificationTimer = 0f;
         private bool _isDocumentOpen = false;
         private bool _isBagOpen = false;
+        private string _customPrompt = string.Empty;
 
         private float _useHoldTimer = 0f;
         private bool _useHoldLatched = false;
@@ -120,10 +126,6 @@ namespace Retro.Inventory
             {
                 _inventory = Object.FindAnyObjectByType<InventorySystem>();
             }
-            if (_playerInteraction == null)
-            {
-                _playerInteraction = Object.FindAnyObjectByType<PlayerInteraction>();
-            }
         }
 
         private void UpdateInteractionPrompt()
@@ -132,13 +134,16 @@ namespace Retro.Inventory
 
             if (_isDocumentOpen || _isBagOpen)
             {
-                _promptText.gameObject.SetActive(false);
+                if (_promptText.gameObject.activeSelf)
+                    _promptText.gameObject.SetActive(false);
                 return;
             }
 
-            if (_playerInteraction != null && !string.IsNullOrEmpty(_playerInteraction.CurrentPrompt))
+            string currentPrompt = PromptProvider != null ? PromptProvider.Invoke() : _customPrompt;
+
+            if (!string.IsNullOrEmpty(currentPrompt))
             {
-                _promptText.text = _playerInteraction.CurrentPrompt;
+                _promptText.text = currentPrompt;
                 if (!_promptText.gameObject.activeSelf)
                 {
                     _promptText.gameObject.SetActive(true);
@@ -404,10 +409,14 @@ namespace Retro.Inventory
             }
         }
 
-        public void SetReferences(InventorySystem inv, PlayerInteraction pi, TextMeshProUGUI prompt, TextMeshProUGUI notification)
+        public void SetPrompt(string prompt)
+        {
+            _customPrompt = prompt;
+        }
+
+        public void SetReferences(InventorySystem inv, TextMeshProUGUI prompt, TextMeshProUGUI notification)
         {
             _inventory = inv;
-            _playerInteraction = pi;
             _promptText = prompt;
             _notificationText = notification;
         }
