@@ -10,8 +10,6 @@ namespace Retro.Inventory
     [SelectionBase]
     public class LockableTarget : MonoBehaviour, IInventoryInteractable
     {
-        public static event System.Action<LockableTarget> OnLockableSpawned;
-
         [Header("Lock Settings")]
         [Tooltip("The ID of the ItemDefinition required to unlock this object (e.g. 'key_brass', 'keycard_admin').")]
         [SerializeField] private string _requiredKeyId = "key_brass";
@@ -26,16 +24,26 @@ namespace Retro.Inventory
         [SerializeField] private bool _isLocked = true;
 
         [Header("Target to Trigger (Optional)")]
-        [Tooltip("Target Door or component to interact with once unlocked.")]
+        [Tooltip("Door or other interactable to pass interaction to once unlocked. Inventory interactables are driven here; " +
+                 "controller interactables (e.g. a first-person Door) are driven by that controller's adapter.")]
         [SerializeField] private Component _targetToTrigger;
 
         [Header("Audio")]
+        [Tooltip("Source for lock sounds. Created on this object if empty.")]
         [SerializeField] private AudioSource _audioSource;
+
+        [Tooltip("Played when the lock opens.")]
         [SerializeField] private AudioClip _unlockSound;
+
+        [Tooltip("Played when the player tries the lock without the key.")]
         [SerializeField] private AudioClip _lockedRattleSound;
 
         [Header("Events")]
+        [Tooltip("Raised once, when the player unlocks this with the key.")]
         [SerializeField] private UnityEvent _onUnlocked;
+
+        private string _unlockPrompt;
+        private string _lockedPrompt;
 
         public bool IsLocked => _isLocked;
         public string RequiredKeyId => _requiredKeyId;
@@ -47,7 +55,16 @@ namespace Retro.Inventory
         {
             EnsureAudioSource();
             EnsureRaycastCollider();
-            OnLockableSpawned?.Invoke(this);
+
+            _unlockPrompt = $"Unlock with {_requiredKeyName}";
+            _lockedPrompt = $"Locked. Requires {_requiredKeyName}.";
+        }
+
+        private static InventorySystem FindInventory(GameObject interactor)
+        {
+            if (interactor == null) return null;
+            InventorySystem inv = interactor.GetComponent<InventorySystem>();
+            return inv != null ? inv : interactor.GetComponentInChildren<InventorySystem>();
         }
 
         private void EnsureAudioSource()
@@ -87,11 +104,7 @@ namespace Retro.Inventory
 
         public void Interact(GameObject player)
         {
-            InventorySystem inv = player.GetComponent<InventorySystem>();
-            if (inv == null)
-            {
-                inv = player.GetComponentInChildren<InventorySystem>();
-            }
+            InventorySystem inv = FindInventory(player);
 
             if (_isLocked)
             {
@@ -129,31 +142,23 @@ namespace Retro.Inventory
             }
         }
 
-        public string GetPromptText()
+        public string GetPromptText(GameObject interactor, out bool isAction)
         {
             if (_isLocked)
             {
-                // Check if the player currently looking has the key
-                GameObject player = GameObject.FindWithTag("Player");
-                if (player != null)
-                {
-                    InventorySystem inv = player.GetComponent<InventorySystem>();
-                    if (inv != null && inv.HasItem(_requiredKeyId))
-                    {
-                        return $"[E] Unlock with {_requiredKeyName}";
-                    }
-                }
-
-                return $"[Locked] Requires {_requiredKeyName}";
+                InventorySystem inv = FindInventory(interactor);
+                isAction = inv != null && inv.HasItem(_requiredKeyId);
+                return isAction ? _unlockPrompt : _lockedPrompt;
             }
 
-            // If already unlocked, check if target implements IInventoryInteractable
+            // Unlocked: show the target's prompt, or nothing if there's nothing left to do here.
             if (_targetToTrigger is IInventoryInteractable interactable)
             {
-                return interactable.GetPromptText();
+                return interactable.GetPromptText(interactor, out isAction);
             }
 
-            return "Unlocked";
+            isAction = false;
+            return string.Empty;
         }
 
         private void TriggerTarget(GameObject player)
@@ -161,11 +166,6 @@ namespace Retro.Inventory
             if (_targetToTrigger is IInventoryInteractable interactable)
             {
                 interactable.Interact(player);
-            }
-            else if (_targetToTrigger != null)
-            {
-                // Reflection/SendMessage fallback for foreign components
-                _targetToTrigger.SendMessage("Interact", player, SendMessageOptions.DontRequireReceiver);
             }
         }
 

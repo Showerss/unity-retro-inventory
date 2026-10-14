@@ -1,79 +1,63 @@
+using FirstPerson.Interaction;
 using UnityEngine;
 
 namespace Retro.Inventory.Adapters
 {
     /// <summary>
-    /// Connects IInventoryInteractable (WorldPickup, LockableTarget)
-    /// to FirstPersonController global IInteractable raycast system,
-    /// and bridges FirstPersonController PlayerInteraction prompts to InventoryHUD.
+    /// Lets the first-person controller's PlayerInteraction reach an inventory object.
+    /// Add it next to the WorldPickup or LockableTarget on the prefab (including item WorldPrefabs, so dropped items can be picked up again).
+    /// When a LockableTarget is unlocked and its target is a controller interactable (e.g. a Door), interaction passes through to it.
     /// </summary>
-    [DefaultExecutionOrder(-50)]
-    public class FpcPickupBridge : MonoBehaviour, global::IInteractable
+    [DisallowMultipleComponent]
+    public sealed class FpcPickupBridge : MonoBehaviour, IInteractable
     {
-        private static PlayerInteraction _cachedPlayerInteraction;
         private IInventoryInteractable _target;
+        private LockableTarget _lock;
 
         private void Awake()
         {
             _target = GetComponent<IInventoryInteractable>();
-        }
+            _lock = _target as LockableTarget;
 
-        public void Interact(GameObject player)
-        {
-            if (_target == null) _target = GetComponent<IInventoryInteractable>();
-            _target?.Interact(player);
-        }
-
-        public string GetPromptText()
-        {
-            if (_target == null) _target = GetComponent<IInventoryInteractable>();
-            return _target?.GetPromptText() ?? string.Empty;
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void AutoHookSceneObjects()
-        {
-            HookAll();
-            UnityEngine.SceneManagement.SceneManager.sceneLoaded += (s, m) =>
+            if (_target == null)
             {
-                _cachedPlayerInteraction = null;
-                HookAll();
-            };
-            WorldPickup.OnPickupSpawned += p => { if (p != null) Hook(p.gameObject); };
-            LockableTarget.OnLockableSpawned += l => { if (l != null) Hook(l.gameObject); };
-
-            // Bridge PlayerInteraction prompt into InventoryHUD without coupling core assembly
-            InventoryHUD.PromptProvider = GetFpcPrompt;
-        }
-
-        private static string GetFpcPrompt()
-        {
-            if (_cachedPlayerInteraction == null)
-            {
-                _cachedPlayerInteraction = Object.FindAnyObjectByType<PlayerInteraction>();
-            }
-            return _cachedPlayerInteraction != null ? _cachedPlayerInteraction.CurrentPrompt : string.Empty;
-        }
-
-        private static void HookAll()
-        {
-            foreach (var p in Object.FindObjectsByType<WorldPickup>())
-            {
-                if (p != null) Hook(p.gameObject);
-            }
-
-            foreach (var l in Object.FindObjectsByType<LockableTarget>())
-            {
-                if (l != null) Hook(l.gameObject);
+                Debug.LogError($"[FpcPickupBridge] '{name}' has no WorldPickup, LockableTarget or other IInventoryInteractable.", this);
             }
         }
 
-        private static void Hook(GameObject go)
+        public InteractionPrompt GetPrompt(PlayerInteraction interactor)
         {
-            if (go != null && go.GetComponent<FpcPickupBridge>() == null)
+            if (_target == null) return InteractionPrompt.None;
+            if (TryGetUnlockedTarget(out IInteractable passThrough)) return passThrough.GetPrompt(interactor);
+
+            string text = _target.GetPromptText(interactor.gameObject, out bool isAction);
+            return new InteractionPrompt(text, isAction);
+        }
+
+        public void Interact(PlayerInteraction interactor)
+        {
+            if (_target == null) return;
+
+            bool wasLocked = _lock != null && _lock.IsLocked;
+            if (!wasLocked && TryGetUnlockedTarget(out IInteractable passThrough))
             {
-                go.AddComponent<FpcPickupBridge>();
+                passThrough.Interact(interactor);
+                return;
             }
+
+            _target.Interact(interactor.gameObject);
+
+            // Unlocking with the key opens the door in the same press.
+            if (wasLocked && TryGetUnlockedTarget(out passThrough))
+            {
+                passThrough.Interact(interactor);
+            }
+        }
+
+        private bool TryGetUnlockedTarget(out IInteractable target)
+        {
+            target = _lock != null && !_lock.IsLocked ? _lock.TargetToTrigger as IInteractable : null;
+            return target != null;
         }
     }
 }

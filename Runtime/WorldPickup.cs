@@ -9,8 +9,6 @@ namespace Retro.Inventory
     [SelectionBase]
     public class WorldPickup : MonoBehaviour, IInventoryInteractable
     {
-        public static event System.Action<WorldPickup> OnPickupSpawned;
-
         [Header("Item Configuration")]
         [Tooltip("The ScriptableObject definition of the item picked up.")]
         [SerializeField] private ItemDefinition _itemDefinition;
@@ -18,7 +16,7 @@ namespace Retro.Inventory
         [Tooltip("Number of items added to inventory upon pickup.")]
         [SerializeField] private int _quantity = 1;
 
-        [Tooltip("Custom prompt text. If left empty, defaults to '[E] Take [Item Name]'.")]
+        [Tooltip("Custom prompt text, without the key. If left empty, defaults to 'Take [Item Name]'.")]
         [SerializeField] private string _customPrompt = string.Empty;
 
         [Header("Retro Bob & Spin Effect")]
@@ -31,6 +29,7 @@ namespace Retro.Inventory
 
         private Vector3 _startPosition;
         private float _randomOffset;
+        private string _prompt = string.Empty;
 
         public ItemDefinition Item => _itemDefinition;
         public int Quantity => _quantity;
@@ -41,7 +40,24 @@ namespace Retro.Inventory
             _randomOffset = Random.Range(0f, 10f);
 
             EnsureRaycastCollider();
-            OnPickupSpawned?.Invoke(this);
+            RebuildPrompt();
+        }
+
+        private void RebuildPrompt()
+        {
+            if (_itemDefinition == null)
+            {
+                _prompt = string.Empty;
+            }
+            else if (!string.IsNullOrEmpty(_customPrompt))
+            {
+                _prompt = _customPrompt;
+            }
+            else
+            {
+                string countSuffix = _quantity > 1 ? $" x{_quantity}" : string.Empty;
+                _prompt = $"Take {_itemDefinition.DisplayName}{countSuffix}";
+            }
         }
 
         private void Update()
@@ -85,6 +101,7 @@ namespace Retro.Inventory
         {
             _itemDefinition = item;
             _quantity = Mathf.Max(1, quantity);
+            RebuildPrompt();
         }
 
         // --- IInventoryInteractable Implementation ---
@@ -109,17 +126,10 @@ namespace Retro.Inventory
             }
         }
 
-        public string GetPromptText()
+        public string GetPromptText(GameObject interactor, out bool isAction)
         {
-            if (_itemDefinition == null) return string.Empty;
-
-            if (!string.IsNullOrEmpty(_customPrompt))
-            {
-                return _customPrompt;
-            }
-
-            string countSuffix = _quantity > 1 ? $" x{_quantity}" : string.Empty;
-            return $"[E] Take {_itemDefinition.DisplayName}{countSuffix}";
+            isAction = true;
+            return _prompt;
         }
     }
 }

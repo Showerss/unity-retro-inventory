@@ -9,6 +9,13 @@ namespace Retro.Inventory
     public interface IInventoryInteractable
     {
         void Interact(GameObject interactor);
-        string GetPromptText();
+
+        /// <summary>
+        /// Prompt for whoever is looking at this. Polled every frame: return cached strings.
+        /// Never include the key; the HUD adds it when <paramref name="isAction"/> is true.
+        /// </summary>
+        /// <param name="isAction">True when interacting does what the text says ("Take Brass Key");
+        /// false for a plain message ("Locked. Requires Brass Key.").</param>
+        string GetPromptText(GameObject interactor, out bool isAction);
     }
 }

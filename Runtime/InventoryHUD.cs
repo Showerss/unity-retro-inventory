@@ -13,12 +13,6 @@ namespace Retro.Inventory
     /// </summary>
     public class InventoryHUD : MonoBehaviour
     {
-        /// <summary>
-        /// Optional delegate provider for external interaction systems (such as FirstPersonController's PlayerInteraction)
-        /// to feed prompt text to this HUD without hard coupling.
-        /// </summary>
-        public static System.Func<string> PromptProvider { get; set; }
-
         [Header("References")]
         [SerializeField] private InventorySystem _inventory;
 
@@ -146,7 +140,8 @@ namespace Retro.Inventory
                 return;
             }
 
-            string currentPrompt = PromptProvider != null ? PromptProvider.Invoke() : _customPrompt;
+            // Interaction prompts belong to the controller's HUD; this only shows text set via SetPrompt.
+            string currentPrompt = _customPrompt;
 
             if (!string.IsNullOrEmpty(currentPrompt))
             {
