@@ -7,6 +7,7 @@ namespace Retro.Inventory
         Document,
         Tool,
         Consumable,
-        Misc
+        Misc,
+        Throwable
     }
 }

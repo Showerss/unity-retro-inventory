@@ -110,19 +110,22 @@ namespace Retro.Inventory
         {
             if (_itemDefinition == null) return;
 
-            InventorySystem inventory = player.GetComponent<InventorySystem>();
-            if (inventory == null)
+            // The player may carry several inventories (weapons, keys, ...); use the first that takes this item.
+            InventorySystem[] inventories = player.GetComponentsInChildren<InventorySystem>();
+            for (int i = 0; i < inventories.Length; i++)
             {
-                inventory = player.GetComponentInChildren<InventorySystem>();
-            }
+                if (!inventories[i].Accepts(_itemDefinition)) continue;
 
-            if (inventory != null)
-            {
-                bool added = inventory.AddItem(_itemDefinition, _quantity, true);
-                if (added)
+                if (inventories[i].AddItem(_itemDefinition, _quantity, true))
                 {
                     Destroy(gameObject);
                 }
+                return;
+            }
+
+            if (inventories.Length > 0)
+            {
+                inventories[0].Notify("You can't carry that yet.");
             }
         }
 

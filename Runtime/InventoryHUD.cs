@@ -221,15 +221,16 @@ namespace Retro.Inventory
 
             if (_inventory == null) return;
 
-            // 3. Hotbar slot selection 1-8
-            if (kb.digit1Key.wasPressedThisFrame) _inventory.SelectSlot(0);
-            else if (kb.digit2Key.wasPressedThisFrame) _inventory.SelectSlot(1);
-            else if (kb.digit3Key.wasPressedThisFrame) _inventory.SelectSlot(2);
-            else if (kb.digit4Key.wasPressedThisFrame) _inventory.SelectSlot(3);
-            else if (kb.digit5Key.wasPressedThisFrame) _inventory.SelectSlot(4);
-            else if (kb.digit6Key.wasPressedThisFrame) _inventory.SelectSlot(5);
-            else if (kb.digit7Key.wasPressedThisFrame) _inventory.SelectSlot(6);
-            else if (kb.digit8Key.wasPressedThisFrame) _inventory.SelectSlot(7);
+            // 3. Hotbar slot selection: one number key per hotbar slot. Pressing the held slot's key puts it away.
+            int hotkeyCount = Mathf.Min(_hotbarSlots.Count, 9);
+            for (int i = 0; i < hotkeyCount; i++)
+            {
+                if (kb[Key.Digit1 + i].wasPressedThisFrame)
+                {
+                    _inventory.ToggleSlot(i);
+                    break;
+                }
+            }
 
             // 4. Mouse Scroll wheel to cycle hotbar (when no modal is open)
             if (!_isBagOpen && !_isDocumentOpen)
@@ -287,7 +288,7 @@ namespace Retro.Inventory
         private bool HasUsableSelection()
         {
             var stack = _inventory != null ? _inventory.SelectedStack : null;
-            return stack != null && !stack.IsEmpty;
+            return stack != null && !stack.IsEmpty && stack.Item.IsUsable;
         }
 
         private void UpdateHoldRing()

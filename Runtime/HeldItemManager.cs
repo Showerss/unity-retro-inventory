@@ -8,6 +8,13 @@ namespace Retro.Inventory
     /// </summary>
     public class HeldItemManager : MonoBehaviour
     {
+        [Header("Inventory")]
+        [Tooltip("Inventory whose selected slot is shown in hand. If empty, uses the InventorySystem on this object or its parents.")]
+        [SerializeField] private InventorySystem _inventory;
+
+        [Tooltip("Shown in hand when no slot is selected or the selected item has no HeldPrefab (e.g. the primary weapon). Optional.")]
+        [SerializeField] private GameObject _defaultHeldPrefab;
+
         [Header("Socket Configuration")]
         [Tooltip("Transform socket under the camera where held items are attached.")]
         [SerializeField] private Transform _heldSocket;
@@ -24,14 +31,12 @@ namespace Retro.Inventory
         [SerializeField] private AudioClip _defaultToggleSound;
 
         private GameObject _currentHeldInstance;
-        private InventorySystem _inventory;
 
         public bool IsFlashlightOn => _flashlightLight != null && _flashlightLight.enabled;
         public bool IsLanternOn => _lanternLight != null && _lanternLight.enabled;
 
         private void Awake()
         {
-            _inventory = GetComponent<InventorySystem>();
             if (_inventory == null)
             {
                 _inventory = GetComponentInParent<InventorySystem>();
@@ -159,14 +164,13 @@ namespace Retro.Inventory
                 _currentHeldInstance = null;
             }
 
-            if (stack == null || stack.IsEmpty || stack.Item == null) return;
-
-            ItemDefinition item = stack.Item;
+            bool hasItem = stack != null && !stack.IsEmpty && stack.Item != null;
+            GameObject prefab = hasItem && stack.Item.HeldPrefab != null ? stack.Item.HeldPrefab : _defaultHeldPrefab;
 
             // Instantiate 3D held visual if configured
-            if (item.HeldPrefab != null && _heldSocket != null)
+            if (prefab != null && _heldSocket != null)
             {
-                _currentHeldInstance = Instantiate(item.HeldPrefab, _heldSocket);
+                _currentHeldInstance = Instantiate(prefab, _heldSocket);
                 _currentHeldInstance.transform.localPosition = Vector3.zero;
                 _currentHeldInstance.transform.localRotation = Quaternion.identity;
 
@@ -177,6 +181,15 @@ namespace Retro.Inventory
                     Destroy(col);
                 }
             }
+        }
+
+        /// <summary>
+        /// Changes what is held when nothing is selected (e.g. swapping the primary weapon) and refreshes the hand.
+        /// </summary>
+        public void SetDefaultHeldPrefab(GameObject prefab)
+        {
+            _defaultHeldPrefab = prefab;
+            if (_inventory != null) HandleSlotSelected(_inventory.SelectedSlotIndex, _inventory.SelectedStack);
         }
 
         /// <summary>

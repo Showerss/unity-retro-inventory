@@ -7,8 +7,8 @@ namespace Retro.Inventory
     /// <summary>
     /// Core inventory component attached to the Player GameObject.
     /// Manages slots, item stacking, selection, use, and dropping.
+    /// A player may carry several, each filtered to different categories (e.g. a weapon hotbar and a key ring).
     /// </summary>
-    [DisallowMultipleComponent]
     public class InventorySystem : MonoBehaviour
     {
         [Header("Configuration")]
@@ -18,6 +18,13 @@ namespace Retro.Inventory
 
         [Tooltip("Currently initialized slots.")]
         [SerializeField] private List<ItemStack> _slots = new List<ItemStack>();
+
+        [Tooltip("Item categories this inventory holds. Leave empty to accept every item.")]
+        [SerializeField] private List<ItemCategory> _acceptedCategories = new List<ItemCategory>();
+
+        [Header("Selection")]
+        [Tooltip("Start with nothing in hand instead of selecting slot 1.")]
+        [SerializeField] private bool _startEmptyHanded = false;
 
         [Header("Pickup Behaviour")]
         [Tooltip("Automatically equip a newly picked-up item if it landed in an empty slot.")]
@@ -89,7 +96,17 @@ namespace Retro.Inventory
         private void Start()
         {
             // Initial selection notification
-            SelectSlot(_selectedSlotIndex);
+            if (_startEmptyHanded) Holster();
+            else SelectSlot(_selectedSlotIndex);
+        }
+
+        /// <summary>
+        /// True if this inventory holds items of the given item's category.
+        /// </summary>
+        public bool Accepts(ItemDefinition item)
+        {
+            if (item == null) return false;
+            return _acceptedCategories == null || _acceptedCategories.Count == 0 || _acceptedCategories.Contains(item.Category);
         }
 
         private void EnsureAudioSource()
@@ -139,6 +156,7 @@ namespace Retro.Inventory
         public bool AddItem(ItemDefinition item, int quantity = 1, bool playFeedback = true)
         {
             if (item == null || quantity <= 0) return false;
+            if (!Accepts(item)) return false;
 
             int remaining = quantity;
             int firstNewSlot = -1;
@@ -280,11 +298,34 @@ namespace Retro.Inventory
         }
 
         /// <summary>
+        /// Puts the held item away, leaving empty hands.
+        /// </summary>
+        public void Holster()
+        {
+            _selectedSlotIndex = -1;
+            OnSlotSelected?.Invoke(-1, null);
+        }
+
+        /// <summary>
+        /// Selects the slot, or holsters it if it is already selected.
+        /// </summary>
+        public void ToggleSlot(int index)
+        {
+            if (index == _selectedSlotIndex) Holster();
+            else SelectSlot(index);
+        }
+
+        /// <summary>
         /// Cycles selected slot forwards or backwards.
         /// </summary>
         public void CycleSlot(int direction)
         {
             if (_capacity <= 0) return;
+            if (_selectedSlotIndex < 0)
+            {
+                SelectSlot(direction > 0 ? 0 : _capacity - 1);
+                return;
+            }
             int next = (_selectedSlotIndex + direction) % _capacity;
             if (next < 0) next += _capacity;
             SelectSlot(next);
@@ -384,7 +425,8 @@ namespace Retro.Inventory
             Notify($"Dropped {item.DisplayName}");
             OnSlotChanged?.Invoke(index, stack);
             OnInventoryChanged?.Invoke();
-            OnSlotSelected?.Invoke(_selectedSlotIndex, SelectedStack);
+            if (index == _selectedSlotIndex && stack.IsEmpty) Holster();
+            else OnSlotSelected?.Invoke(_selectedSlotIndex, SelectedStack);
 
             return worldObj;
         }
