@@ -1,6 +1,6 @@
 {
   "name": "com.retro.inventory",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "displayName": "Retro Inventory & Pickups",
   "description": "Modular retro 90s inventory: slot-based storage, stackable items, hotbar, world pickups, held-item rendering, document reading and lockable targets. Integrates with First Person Controller via optional adapter.",
   "unity": "6000.0",
