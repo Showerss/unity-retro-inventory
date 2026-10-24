@@ -16,6 +16,9 @@ namespace Retro.Inventory
         [Header("References")]
         [SerializeField] private InventorySystem _inventory;
 
+        [Tooltip("Other inventories on the player (lights, keys, notes) whose notifications this HUD also shows.")]
+        [SerializeField] private List<InventorySystem> _extraInventories = new List<InventorySystem>();
+
         [Header("UI Elements - Prompt & Notification")]
         [SerializeField] private TextMeshProUGUI _promptText;
         [SerializeField] private TextMeshProUGUI _notificationText;
@@ -82,6 +85,11 @@ namespace Retro.Inventory
                 _inventory.OnSlotSelected += HandleSlotSelected;
                 _inventory.OnNotification += ShowNotification;
             }
+
+            foreach (InventorySystem extra in _extraInventories)
+            {
+                if (extra != null) extra.OnNotification += ShowNotification;
+            }
         }
 
         private void OnDisable()
@@ -93,6 +101,11 @@ namespace Retro.Inventory
                 _inventory.OnInventoryChanged -= RefreshHUD;
                 _inventory.OnSlotSelected -= HandleSlotSelected;
                 _inventory.OnNotification -= ShowNotification;
+            }
+
+            foreach (InventorySystem extra in _extraInventories)
+            {
+                if (extra != null) extra.OnNotification -= ShowNotification;
             }
 
             if (_isBagOpen || _isDocumentOpen)

@@ -60,11 +60,18 @@ namespace Retro.Inventory
             _lockedPrompt = $"Locked. Requires {_requiredKeyName}.";
         }
 
-        private static InventorySystem FindInventory(GameObject interactor)
+        private InventorySystem FindInventory(GameObject interactor)
         {
             if (interactor == null) return null;
-            InventorySystem inv = interactor.GetComponent<InventorySystem>();
-            return inv != null ? inv : interactor.GetComponentInChildren<InventorySystem>();
+
+            // The player may carry several inventories (throwables, keys, lights); prefer the one holding the key.
+            InventorySystem[] inventories = interactor.GetComponentsInChildren<InventorySystem>();
+            foreach (InventorySystem inv in inventories)
+            {
+                if (inv.HasItem(_requiredKeyId)) return inv;
+            }
+
+            return inventories.Length > 0 ? inventories[0] : null;
         }
 
         private void EnsureAudioSource()
