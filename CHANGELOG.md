@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Shops:** `ShopCatalog` (stock + buy/sell multipliers), `Shopkeeper` (interact to trade; owns live stock, sold items join it), `ShopUI` (self-building trade window, click to buy/sell, closes on Esc/E/Leave or walking away).
+- **Money:** `Wallet` (named currency, on the player), `CurrencyPickup`, `WalletLabel` (HUD counter).
+- `ItemDefinition.Value` (shop price) and `IsQuestItem` (shops won't buy it).
 - `WorldPickup._infinite`: the pickup gives its item every time and is never used up.
 - `ThrowItemAction`: throws a projectile prefab from the camera (lob, inherited run speed, ignores the thrower's colliders).
 - `HeldThrowInput`: left-click throws the readied item, with a short push-forward motion. `HeldItemManager` adds it automatically to the held model of any item whose use action is a `ThrowItemAction`.
@@ -16,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `InventoryHUD._extraInventories`: show notifications (e.g. "+ Flashlight") from the player's other inventories.
 
 ### Fixed
+- `DropSlot` refuses items with no `WorldPrefab` instead of silently destroying them.
 - Using the last consumable in the selected slot now holsters, so the empty item's model no longer stays in hand.
 - `LockableTarget` looks for the key in every inventory on the player, not just the first one, so a separate key inventory works.
 

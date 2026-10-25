@@ -88,6 +88,16 @@ inv.OnInventoryChanged += RefreshMyUI;
 inv.OnNotification += msg => Debug.Log(msg);
 ```
 
+## Shops & Money
+
+1. Add `Wallet` to the player (next to the `InventorySystem`s). Set the currency name.
+2. Create a **Shop Catalog** (`Create > Retro > Inventory > Shop Catalog`): listings + buy/sell multipliers. Give items a `Value`; tick `IsQuestItem` on items shops must refuse.
+3. NPC: `Shopkeeper` (catalog assigned) + `FpcPickupBridge` + a collider.
+4. One `ShopUI` object anywhere in the scene (needs an EventSystem). It opens for any shopkeeper.
+5. Optional: `CurrencyPickup` + `FpcPickupBridge` for money in the world, `WalletLabel` for a HUD counter.
+
+Shop stock is per session; the wallet is saved by the pause menu's `WalletSaveParticipant`.
+
 ## License
 
 [MIT License](LICENSE.md) © 2026 Phillip Banky

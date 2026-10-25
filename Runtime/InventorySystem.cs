@@ -394,27 +394,29 @@ namespace Retro.Inventory
             if (stack.IsEmpty) return null;
 
             ItemDefinition item = stack.Item;
-            GameObject worldObj = null;
-
-            if (item.WorldPrefab != null)
+            if (item.WorldPrefab == null)
             {
-                Vector3 spawnPos = transform.position + transform.forward * _dropDistance + Vector3.up * _dropHeight;
-                worldObj = Instantiate(item.WorldPrefab, spawnPos, transform.rotation);
+                // Nothing to spawn: dropping would silently destroy the item.
+                Notify($"You can't drop the {item.DisplayName}.");
+                return null;
+            }
 
-                // Configure WorldPickup if present
-                WorldPickup pickup = worldObj.GetComponent<WorldPickup>();
-                if (pickup != null)
-                {
-                    pickup.SetItem(item, 1);
-                }
+            Vector3 spawnPos = transform.position + transform.forward * _dropDistance + Vector3.up * _dropHeight;
+            GameObject worldObj = Instantiate(item.WorldPrefab, spawnPos, transform.rotation);
 
-                // Add physics toss if Rigidbody exists
-                Rigidbody rb = worldObj.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.isKinematic = false;
-                    rb.linearVelocity = (transform.forward + Vector3.up * _dropUpwardArc).normalized * _dropForce;
-                }
+            // Configure WorldPickup if present
+            WorldPickup pickup = worldObj.GetComponent<WorldPickup>();
+            if (pickup != null)
+            {
+                pickup.SetItem(item, 1);
+            }
+
+            // Add physics toss if Rigidbody exists
+            Rigidbody rb = worldObj.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.linearVelocity = (transform.forward + Vector3.up * _dropUpwardArc).normalized * _dropForce;
             }
 
             stack.Quantity--;

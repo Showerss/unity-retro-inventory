@@ -39,6 +39,14 @@ namespace Retro.Inventory
         [Tooltip("Modular action executed when the item is used (e.g. ToggleLightAction, ReadDocumentAction, UnlockTargetAction).")]
         [SerializeField] private ItemUseAction _useAction;
 
+        [Header("Trade")]
+        [Tooltip("Shop price in currency. Shops sell at this and buy back at a fraction of it (see ShopCatalog).")]
+        [Min(0)]
+        [SerializeField] private int _value = 1;
+
+        [Tooltip("Needed for a quest: shops will not buy it.")]
+        [SerializeField] private bool _isQuestItem = false;
+
         [Header("Prefabs & Visuals")]
         [Tooltip("Prefab spawned in the 3D world when the item is dropped or placed.")]
         [SerializeField] private GameObject _worldPrefab;
@@ -63,6 +71,8 @@ namespace Retro.Inventory
         public bool IsUsable => _isUsable;
         public bool IsConsumable => _isConsumable;
         public ItemUseAction UseAction => _useAction;
+        public int Value => _value;
+        public bool IsQuestItem => _isQuestItem;
         public GameObject WorldPrefab => _worldPrefab;
         public GameObject HeldPrefab => _heldPrefab;
         public AudioClip PickupSound => _pickupSound;
