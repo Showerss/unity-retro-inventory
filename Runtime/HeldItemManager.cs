@@ -32,6 +32,7 @@ namespace Retro.Inventory
 
         private GameObject _currentHeldInstance;
 
+        public InventorySystem Inventory => _inventory;
         public bool IsFlashlightOn => _flashlightLight != null && _flashlightLight.enabled;
         public bool IsLanternOn => _lanternLight != null && _lanternLight.enabled;
 
@@ -179,6 +180,12 @@ namespace Retro.Inventory
                 foreach (var col in colliders)
                 {
                     Destroy(col);
+                }
+
+                // Anything whose use is a throw gets left-click throwing; the primary weapon and lights keep their own input.
+                if (hasItem && stack.Item.UseAction is ThrowItemAction && _currentHeldInstance.GetComponent<HeldThrowInput>() == null)
+                {
+                    _currentHeldInstance.AddComponent<HeldThrowInput>();
                 }
             }
         }

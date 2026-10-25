@@ -17,6 +17,9 @@ namespace Retro.Inventory
         [Tooltip("Number of items added to inventory upon pickup.")]
         [SerializeField] private int _quantity = 1;
 
+        [Tooltip("Never used up: gives the item every time and stays put. For test ranges and supply crates.")]
+        [SerializeField] private bool _infinite;
+
         [Tooltip("Custom prompt text, without the key. If left empty, defaults to 'Take [Item Name]'.")]
         [SerializeField] private string _customPrompt = string.Empty;
 
@@ -127,7 +130,7 @@ namespace Retro.Inventory
             {
                 if (!inventories[i].Accepts(_itemDefinition)) continue;
 
-                if (inventories[i].AddItem(_itemDefinition, _quantity, true))
+                if (inventories[i].AddItem(_itemDefinition, _quantity, true) && !_infinite)
                 {
                     Collect(player);
                 }

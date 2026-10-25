@@ -371,6 +371,7 @@ namespace Retro.Inventory
                     }
                     OnSlotChanged?.Invoke(index, stack);
                     OnInventoryChanged?.Invoke();
+                    if (index == _selectedSlotIndex && stack.IsEmpty) Holster(); // last one used: back to the primary weapon
                 }
 
                 OnItemUsed?.Invoke(item, true);
