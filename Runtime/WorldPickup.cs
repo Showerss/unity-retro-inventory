@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace Retro.Inventory
@@ -26,6 +27,16 @@ namespace Retro.Inventory
         [SerializeField] private float _bobSpeed = 2f;
         [SerializeField] private float _bobHeight = 0.08f;
         [SerializeField] private float _rotationSpeed = 45f;
+
+        [Header("Collect Animation")]
+        [Tooltip("Seconds the item flies to the player's hand before it disappears. 0 removes it instantly.")]
+        [SerializeField] private float _collectDuration = 0.28f;
+
+        [Tooltip("Where the item flies to, relative to the player's camera (right, up, forward) in metres.")]
+        [SerializeField] private Vector3 _collectTarget = new Vector3(0.18f, -0.28f, 0.45f);
+
+        [Tooltip("Height of the arc above the straight line, in metres.")]
+        [SerializeField] private float _collectArcHeight = 0.15f;
 
         private Vector3 _startPosition;
         private float _randomOffset;
@@ -118,7 +129,7 @@ namespace Retro.Inventory
 
                 if (inventories[i].AddItem(_itemDefinition, _quantity, true))
                 {
-                    Destroy(gameObject);
+                    Collect(player);
                 }
                 return;
             }
@@ -133,6 +144,41 @@ namespace Retro.Inventory
         {
             isAction = true;
             return _prompt;
+        }
+
+        /// <summary>Already in the inventory: fly to the player's hand, shrinking, then remove.</summary>
+        private void Collect(GameObject player)
+        {
+            Camera cam = player.GetComponentInChildren<Camera>();
+            if (_collectDuration <= 0f || cam == null)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            // No second pickup, no marker, no physics while it flies.
+            foreach (Collider col in GetComponentsInChildren<Collider>()) col.enabled = false;
+            if (TryGetComponent(out Rigidbody body)) body.isKinematic = true;
+            _enableBobAndSpin = false;
+
+            StartCoroutine(FlyToHand(cam.transform));
+        }
+
+        private IEnumerator FlyToHand(Transform cam)
+        {
+            Vector3 from = transform.position;
+            Vector3 startScale = transform.localScale;
+
+            for (float t = 0f; t < 1f; t += Time.deltaTime / _collectDuration)
+            {
+                Vector3 to = cam.TransformPoint(_collectTarget); // follows the camera if the player moves
+                float eased = t * t * (3f - 2f * t);
+                transform.position = Vector3.Lerp(from, to, eased) + Vector3.up * (Mathf.Sin(t * Mathf.PI) * _collectArcHeight);
+                transform.localScale = startScale * (1f - eased * eased);
+                yield return null;
+            }
+
+            Destroy(gameObject);
         }
     }
 }

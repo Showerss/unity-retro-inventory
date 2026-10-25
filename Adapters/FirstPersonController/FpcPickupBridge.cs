@@ -6,7 +6,8 @@ namespace Retro.Inventory.Adapters
     /// <summary>
     /// Lets the first-person controller's PlayerInteraction reach an inventory object.
     /// Add it next to the WorldPickup or LockableTarget on the prefab (including item WorldPrefabs, so dropped items can be picked up again).
-    /// When a LockableTarget is unlocked and its target is a controller interactable (e.g. a Door), interaction passes through to it.
+    /// When a LockableTarget is unlocked and its target is a controller interactable (e.g. a Door), interaction passes through to it;
+    /// while still locked, a target Door rattles.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class FpcPickupBridge : MonoBehaviour, IInteractable
@@ -51,6 +52,10 @@ namespace Retro.Inventory.Adapters
             if (wasLocked && TryGetUnlockedTarget(out passThrough))
             {
                 passThrough.Interact(interactor);
+            }
+            else if (wasLocked && _lock.IsLocked && _lock.TargetToTrigger is Door door)
+            {
+                door.Rattle();
             }
         }
 
